@@ -41,6 +41,37 @@ module.exports = class Host {
     );
   }
 
+  update(propertyId) {
+    console.log("Updating property with ID:", propertyId);
+    return db.execute(
+      `UPDATE property SET
+       propertyName = ?,
+       location = ?,
+       price = ?,
+       imageUrl = ?,
+       ownerName = ?,
+       rating = ?
+       WHERE idProperty = ?`,
+      [
+        this.propertyName,
+        this.location,
+        this.price,
+        this.imageUrl,
+        this.ownerName,
+        this.rating, 
+        propertyId,
+      ]
+    );
+  }
+
+  delete(propertyId) {
+    console.log("Deleting property with ID:", propertyId);
+    return db.execute(
+      `DELETE FROM property WHERE idProperty = ?`,
+      [propertyId]
+    );
+  }
+
   static fetchAll() {
     return db.execute("SELECT * FROM property");
   }
