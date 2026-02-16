@@ -1,7 +1,212 @@
+import { toast, ToastContainer } from "react-toastify";
+import { addProperties, editProperties } from "../api/hostApi";
+import { useState } from "react";
+import { useEffect } from "react";
+import {useParams} from 'react-router-dom';
+import { fetchPropertiesId } from "../api/propertyApi";
+import { useNavigate } from "react-router-dom";
+
 export default function EditProperty() {
-    return (
-        <div>
-            <h1>Edit Property</h1>
+    const navigate=useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const {id}= useParams();
+  const notify = () => toast.success("Property edited successfully! 🎉", {
+    autoClose: 3000,
+    onClose: () => navigate("/host/properties"),
+  });
+  const notifyError = (msg) => toast.error(msg || "Failed to edit property");
+
+  const getAllProperties = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchPropertiesId(id);
+        setProperties(response.data);
+        console.log(response.data);
+      } catch (error) {
+        notifyError("Error fetching properties. Please try again.");
+        console.error("Error fetching properties:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+ const handleChange=(e)=>{
+
+    const {name,value}=e.target;
+    console.log(name,value);
+    setProperties(prev=>({
+      ...prev,
+      [name]:value
+    }))
+ }
+
+  const handleSubmit=async(event)=> {
+    event.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const resp=await editProperties(id,properties);
+      if(resp.status===200){
+        notify();
+      }else{
+        notifyError("Failed to edit property");
+      }
+    } catch (error) {
+      console.error("Error editing property:", error);
+      notifyError(error.response?.data?.message || "Failed to edit property");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+  useEffect(() => { 
+   getAllProperties();
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="text-5xl mb-4">🏠</div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3">
+            Edit Your Property
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Update your property details
+          </p>
         </div>
-    );
+
+        {/* Form Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+          {/* Progress Bar */}
+          <div className="h-1 bg-gradient-to-r from-red-500 via-red-400 to-pink-500"></div>
+
+          <div className="p-8 sm:p-12">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Property Name */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Property Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="propertyName"
+                  value={properties.propertyName||''}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white text-gray-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 transition-all duration-200"
+                  onChange={(e)=>handleChange(e)}
+                />
+              </div>
+
+              {/* Location */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={properties.location||''}
+                  onChange={(e)=>handleChange(e)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white text-gray-900  focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 transition-all duration-200"
+                />
+              </div>
+
+              {/* Price */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Price (₹) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-xl text-gray-500">₹</span>
+                  <input
+                    type="number"
+                    name="price"
+                    value={properties.price||''}
+                    required
+                    onChange={(e)=>handleChange(e)}
+                    className="w-full pl-8 pr-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white text-gray-900  focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              {/* Image URL */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Image URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="imageUrl"
+                  value={properties.imageUrl||''}
+                  onChange={(e)=>handleChange(e)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white text-gray-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 transition-all duration-200"
+                />
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Provide a high-quality image URL of your property
+                </p>
+              </div>
+
+              {/* Owner Name */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Owner Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={properties.ownerName||''}
+                  onChange={(e)=>handleChange(e)}
+                  required
+                  className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white text-gray-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 transition-all duration-200"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-6">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Adding Property...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✨</span>
+                      <span>Edit Property</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Help Text */}
+              <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm text-blue-900 dark:text-blue-200">
+                  <strong>💡 Tip:</strong> Fill out all fields accurately to get maximum visibility and faster responses from potential buyers.
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </div>
+  );
 }

@@ -5,12 +5,14 @@ import "./index.css";
 import { useEffect } from "react";
 import AppRoutes from "./routes/AppRoutes";
 import Navigation from "./components/common/Navigation";
+import Footer from "./components/common/Footer";
 
 function App() {
   return (
     <div>
       <Navigation />
       <AppRoutes />
+      <Footer/>
     </div>
   );
 }

@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { fetchProperties } from "../api/propertyApi";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import { deleteProperties } from "../api/hostApi";
 
-export default function PropertyList() {
+export default function PropertyListAdmin() {
   const [properties, setProperties] = useState([]);
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [sortBy, setSortBy] = useState("name");
   const [showFilters, setShowFilters] = useState(false);
+  const navigate = useNavigate();
 
   const getAllProperties = async () => {
     try {
@@ -32,21 +31,22 @@ export default function PropertyList() {
     getAllProperties();
   }, []);
 
-  // Filter and search logic
   useEffect(() => {
     let filtered = properties;
 
-    // Search filter
+    // Search filter (property name and location only - no owner)
     if (searchQuery) {
-      filtered = filtered.filter((p) =>
-        p.propertyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (p) =>
+          p.propertyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.location?.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
     // Price range filter
-    filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    filtered = filtered.filter(
+      (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
+    );
 
     // Sorting
     filtered.sort((a, b) => {
@@ -72,20 +72,49 @@ export default function PropertyList() {
     return `₹${price.toLocaleString()}`;
   };
 
+  const handleEdit = (id, e) => {
+    e.stopPropagation();
+    navigate(`/edit-property/${id}`);
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this property?"))
+      return;
+    try {
+      const resp = await deleteProperties(id);
+      if (resp.status === 200) {
+        toast.success("Property deleted successfully!", {
+          autoClose: 3000,
+          onClose: () => getAllProperties(),
+        });
+      } else {
+        toast.error("Failed to delete property", {
+          autoClose: 3000,
+          onClose: () => getAllProperties(),
+        });
+      }
+      getAllProperties();
+    } catch (error) {
+      console.error("Error deleting property:", error);
+      toast.error("Failed to delete property");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header Section */}
       <div className="bg-white dark:bg-gray-800 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Find Properties
+            Manage Properties
           </h1>
 
           {/* Search Bar */}
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Search by name, location, or owner..."
+              placeholder="Search by name or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -135,8 +164,8 @@ export default function PropertyList() {
                   <input
                     type="range"
                     min="0"
-                    max="100000"
-                    step="5000"
+                    max="10000000"
+                    step="100000"
                     value={priceRange[1]}
                     onChange={(e) =>
                       setPriceRange([priceRange[0], parseInt(e.target.value)])
@@ -163,6 +192,7 @@ export default function PropertyList() {
             </div>
           )}
 
+          {/* Properties Grid */}
           <div className={showFilters ? "lg:col-span-3" : "lg:col-span-4"}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -170,13 +200,16 @@ export default function PropertyList() {
                   <div className="inline-block animate-spin">
                     <div className="w-12 h-12 border-4 border-gray-300 border-t-red-500 rounded-full"></div>
                   </div>
-                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading properties...</p>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Loading properties...
+                  </p>
                 </div>
               </div>
             ) : filteredProperties.length > 0 ? (
               <>
                 <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                  Showing {filteredProperties.length} of {properties.length} properties
+                  Showing {filteredProperties.length} of {properties.length}{" "}
+                  properties
                 </div>
                 <div className="flex flex-wrap gap-4">
                   {filteredProperties.map((property) => {
@@ -221,10 +254,12 @@ export default function PropertyList() {
 
                           <div className="space-y-1 mb-3 text-xs flex-grow">
                             <p className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                              👤 <span className="line-clamp-1">{ownerName}</span>
+                              👤{" "}
+                              <span className="line-clamp-1">{ownerName}</span>
                             </p>
                             <p className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                              📍 <span className="line-clamp-1">{location}</span>
+                              📍{" "}
+                              <span className="line-clamp-1">{location}</span>
                             </p>
                           </div>
 
@@ -232,15 +267,20 @@ export default function PropertyList() {
                             <span className="text-lg font-bold text-red-600 dark:text-red-500">
                               {formatPrice(price)}
                             </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/properties/${id}`);
-                              }}
-                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition-colors whitespace-nowrap"
-                            >
-                              View
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => handleEdit(id, e)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
+                              >
+                                ✎ Edit
+                              </button>
+                              <button
+                                onClick={(e) => handleDelete(id, e)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
+                              >
+                                🗑 Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -274,6 +314,17 @@ export default function PropertyList() {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

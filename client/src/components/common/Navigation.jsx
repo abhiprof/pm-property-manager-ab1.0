@@ -23,7 +23,15 @@ export default function Navigation() {
             </li>
             <li>
               <Link
-                to="/add-properties"
+                to="host/properties"
+                className="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Host Properties
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="host/add-properties"
                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-md text-sm font-medium"
               >
                 Add Property
